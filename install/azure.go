@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os/exec"
 )
 
@@ -58,7 +59,8 @@ type accountInfo struct {
 func (k *K8sInstaller) createAzureServicePrincipal(ctx context.Context) error {
 	if k.params.Azure.TenantID == "" {
 		k.Log("🚀 Creating service principal for Cilium operator...")
-		args := []string{"ad", "sp", "create-for-rbac"}
+		spName := fmt.Sprintf("cilium-operator-%d", rand.Intn(100000))
+		args := []string{"ad", "sp", "create-for-rbac", "--name", spName}
 		cmd := azCommand(args...)
 		bytes, err := cmd.Output()
 		if err != nil {
