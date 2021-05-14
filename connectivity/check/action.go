@@ -61,7 +61,7 @@ type Action struct {
 	expIngress Result
 
 	// flows is a map of all flow logs, indexed by pod name
-	flows map[string]*flowsSet
+	flows map[string]flowsSet
 
 	flowResults map[string]FlowRequirementResults
 
@@ -83,7 +83,7 @@ func newAction(t *Test, name string, s Scenario, src *Pod, dst TestPeer) *Action
 		src:         src,
 		dst:         dst,
 		started:     time.Now(),
-		flows:       map[string]*flowsSet{},
+		flows:       map[string]flowsSet{},
 		flowResults: map[string]FlowRequirementResults{},
 	}
 }
@@ -185,8 +185,8 @@ func (a *Action) shouldSucceed() bool {
 	return !a.expEgress.Drop && !a.expIngress.Drop
 }
 
-func (a *Action) printFlows(pod string, f *flowsSet, r FlowRequirementResults) {
-	if f == nil {
+func (a *Action) printFlows(pod string, f flowsSet, r FlowRequirementResults) {
+	if len(f) == 0 {
 		a.Logf("📄 No flows recorded for pod %s", pod)
 		return
 	}
@@ -195,7 +195,7 @@ func (a *Action) printFlows(pod string, f *flowsSet, r FlowRequirementResults) {
 	printer := hubprinter.New(hubprinter.Compact(), hubprinter.WithIPTranslation())
 	defer printer.Close()
 
-	for index, flow := range *f {
+	for index, flow := range f {
 		if !a.test.ctx.AllFlows() && r.FirstMatch > 0 && r.FirstMatch > index {
 			// Skip flows before the first match unless printing all flows
 			continue
@@ -233,14 +233,14 @@ func (a *Action) printFlows(pod string, f *flowsSet, r FlowRequirementResults) {
 	a.Log()
 }
 
-func (a *Action) matchFlowRequirements(ctx context.Context, flows *flowsSet, pod string, req *filters.FlowSetRequirement) (r FlowRequirementResults) {
+func (a *Action) matchFlowRequirements(ctx context.Context, flows flowsSet, pod string, req *filters.FlowSetRequirement) (r FlowRequirementResults) {
 	r.Matched = MatchMap{}
 
 	match := func(expect bool, f filters.FlowRequirement) (int, bool, *flow.Flow) {
 		index, match, flow := flows.Contains(f.Filter)
 
 		if match {
-			r.Matched[index] = expect
+			r.Matched[r.FirstMatch+index] = expect
 		}
 
 		if match != expect {
@@ -269,6 +269,24 @@ func (a *Action) matchFlowRequirements(ctx context.Context, flows *flowsSet, pod
 		r.NeedMoreFlows = true
 	} else {
 		r.FirstMatch = index
+		// Hide all flows before the first match from the rest of the matching
+		flows = flows[index:]
+	}
+
+	if !(req.Last.SkipOnAggregation && a.test.ctx.FlowAggregation()) {
+		if index, match, lastFlow := match(true, req.Last); !match {
+			r.NeedMoreFlows = true
+		} else {
+			// flows before the first match have been hidden, need to compensate here
+			r.LastMatch = r.FirstMatch + index
+			// Hide all flows after the last match from the rest of the matching
+			flows = flows[:index]
+
+			flowTimestamp, err := ptypes.Timestamp(lastFlow.Time)
+			if err == nil {
+				r.LastMatchTimestamp = flowTimestamp
+			}
+		}
 	}
 
 	for _, f := range req.Middle {
@@ -276,21 +294,6 @@ func (a *Action) matchFlowRequirements(ctx context.Context, flows *flowsSet, pod
 			continue
 		}
 		match(true, f)
-	}
-
-	if !(req.Last.SkipOnAggregation && a.test.ctx.FlowAggregation()) {
-		if index, match, lastFlow := match(true, req.Last); !match {
-			r.NeedMoreFlows = true
-		} else {
-			r.LastMatch = index
-
-			if lastFlow != nil {
-				flowTimestamp, err := ptypes.Timestamp(lastFlow.Time)
-				if err == nil {
-					r.LastMatchTimestamp = flowTimestamp
-				}
-			}
-		}
 	}
 
 	for _, f := range req.Except {
@@ -511,7 +514,7 @@ func (a *Action) ValidateFlows(ctx context.Context, pod, podIP string, req *filt
 
 retry:
 	flows, err := a.getFlows(ctx, hubbleClient, a.started, pod, podIP)
-	if err != nil || flows == nil || len(*flows) == 0 {
+	if err != nil || len(flows) == 0 {
 		if err == nil {
 			err = fmt.Errorf("no flows returned")
 		}
@@ -551,11 +554,11 @@ retry:
 	a.Log()
 }
 
-func (a *Action) getFlows(ctx context.Context, hubbleClient observer.ObserverClient, since time.Time, pod, podIP string) (*flowsSet, error) {
+func (a *Action) getFlows(ctx context.Context, hubbleClient observer.ObserverClient, since time.Time, pod, podIP string) (flowsSet, error) {
 	var set flowsSet
 
 	if hubbleClient == nil {
-		return &set, nil
+		return set, nil
 	}
 
 	sinceTimestamp, err := ptypes.TimestampProto(since)
@@ -596,11 +599,11 @@ func (a *Action) getFlows(ctx context.Context, hubbleClient observer.ObserverCli
 		res, err := b.Recv()
 		switch err {
 		case io.EOF, context.Canceled:
-			return &set, nil
+			return set, nil
 		case nil:
 		default:
 			if status.Code(err) == codes.Canceled {
-				return &set, nil
+				return set, nil
 			}
 			return nil, err
 		}
