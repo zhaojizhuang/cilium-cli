@@ -207,17 +207,19 @@ func (a *Action) ExecInPod(ctx context.Context, cmd []string) {
 			a.test.Log(strings.TrimSpace(stderr.String()))
 			a.test.Log()
 		} else {
-			a.test.Debugf("command %q failed as expected: %s", cmdStr, err)
+			a.test.Debugf("command %q failed as expected: %s:\n%s", cmdStr, err, stderr)
 		}
 	} else {
 		if !a.shouldSucceed() {
 			// Command succeeded unexpectedly, display stdout. (stderr should be empty)
-			a.Failf("command %q succeeded while it should have failed: %s", cmdStr, stdout.String())
+			a.Failf("command %q succeeded while it should have failed:", cmdStr)
 			if stdout.Len() > 0 {
 				a.test.Infof("%s stdout:", cmdName)
 				a.test.Log(strings.TrimSpace(stdout.String()))
 				a.test.Log()
 			}
+		} else {
+			a.test.Debugf("command %q succeeded as expected:\n%s", cmdStr, stdout)
 		}
 	}
 }
