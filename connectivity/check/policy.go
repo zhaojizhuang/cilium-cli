@@ -141,20 +141,31 @@ var (
 	// 22 is the curl exit code for HTTP errors.
 	ResultDNSOKDropCurlHTTPError = Result{
 		DNSProxy: true,
+		L7Proxy:  true,
 		Drop:     true,
 		ExitCode: 22,
 	}
 
 	// ResultDrop expects a dropped flow and a failed command.
-	ResultDrop = Result{Drop: true, ExitCode: ExitAnyError}
+	ResultDrop = Result{
+		Drop:     true,
+		ExitCode: ExitAnyError,
+	}
 
 	// ResultDropCurlTimeout expects a dropped flow and a failed command.
 	// 22 is the Curl exit code for CURLE_HTTP_RETURNED_ERROR
-	ResultDropCurlTimeout = Result{Drop: true, ExitCode: 28}
+	ResultDropCurlTimeout = Result{
+		Drop:     true,
+		ExitCode: 28,
+	}
 
 	// ResultDropCurlHTTPError expects a dropped flow and a failed command.
 	// 22 is the Curl exit code for CURLE_HTTP_RETURNED_ERROR
-	ResultDropCurlHTTPError = Result{Drop: true, ExitCode: 22}
+	ResultDropCurlHTTPError = Result{
+		L7Proxy:  true,
+		Drop:     true,
+		ExitCode: 22,
+	}
 )
 
 type HTTP struct {
