@@ -142,7 +142,7 @@ func (k *K8sInstaller) azureSetupServicePrincipal(ctx context.Context) error {
 		}
 
 		k.Log("✅ Created Azure Service Principal for Cilium operator with App ID %s and Tenant ID %s", p.AppID, p.Tenant)
-		k.Log("ℹ️ Its RBAC privileges are restricted to the AKS node resource group %s", k.params.Azure.AKSNodeResourceGroup)
+		k.Log("ℹ️  Its RBAC privileges are restricted to the AKS node resource group %s", k.params.Azure.AKSNodeResourceGroup)
 		k.params.Azure.TenantID = p.Tenant
 		k.params.Azure.ClientID = p.AppID
 		k.params.Azure.ClientSecret = p.Password

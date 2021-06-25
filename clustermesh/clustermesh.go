@@ -1469,7 +1469,7 @@ for ((i = 0 ; i < 24; i++)); do
         break
     fi
     sleep 5s
-    echo "Waiting for kube-dns service to come available..."
+    echo "Waiting for kube-dns service to become available..."
 done
 
 namespace=$(cilium endpoint get -l reserved:host -o jsonpath='{$[0].status.identity.labels}' | tr -d "[]\"" | tr "," "\n" | grep io.kubernetes.pod.namespace | cut -d= -f2)

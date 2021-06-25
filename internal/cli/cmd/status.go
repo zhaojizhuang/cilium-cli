@@ -43,7 +43,7 @@ func newCmdStatus() *cobra.Command {
 				fmt.Println(s.Format())
 			}
 			if err != nil {
-				fatalf("Unable to determine status:  %s", err)
+				fatalf("Unable to determine status: %s", err)
 			}
 			return err
 		},

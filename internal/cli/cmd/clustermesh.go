@@ -163,7 +163,7 @@ func newCmdClusterMeshStatus() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cm := clustermesh.NewK8sClusterMesh(k8sClient, params)
 			if _, err := cm.Status(context.Background()); err != nil {
-				fatalf("Unable to determine status:  %s", err)
+				fatalf("Unable to determine status: %s", err)
 			}
 			return nil
 		},

@@ -1360,7 +1360,7 @@ func (k *K8sInstaller) generateConfigMap() (*corev1.ConfigMap, error) {
 	}
 
 	for key, value := range k.params.configOverwrites {
-		k.Log("ℹ️ Manual overwrite in ConfigMap: %s=%s", key, value)
+		k.Log("ℹ️  Manual overwrite in ConfigMap: %s=%s", key, value)
 		m.Data[key] = value
 	}
 
@@ -1531,7 +1531,7 @@ func (k *K8sInstaller) Install(ctx context.Context) error {
 		if k.params.NativeRoutingCIDR == "" {
 			cidr, err := k.gkeNativeRoutingCIDR(ctx, k.client.ContextName())
 			if err != nil {
-				k.Log("❌ Unable to auto-detect GKE native routing CIDR. Is \"gcloud\" installed?")
+				k.Log(`❌ Unable to auto-detect GKE native routing CIDR. Is "gcloud" installed?`)
 				k.Log("ℹ️  You can set the native routing CIDR manually with --native-routing-cidr")
 				return err
 			}
@@ -1712,7 +1712,7 @@ func (k *K8sInstaller) pushRollbackStep(step rollbackStep) {
 }
 
 func (k *K8sInstaller) RollbackInstallation(ctx context.Context) {
-	k.Log("↩️ Rolling back installation...")
+	k.Log("↩️  Rolling back installation...")
 
 	for _, r := range k.rollbackSteps {
 		r(ctx)
