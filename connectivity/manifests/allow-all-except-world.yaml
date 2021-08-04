@@ -2,12 +2,20 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   namespace: cilium-test
-  name: allow-all
+  name: allow-all-except-world
 spec:
   endpointSelector: {}
   egress:
   - toEntities:
-    - all
+    - host
+    - remote-node
+    - cluster
+    - init
+    - health
   ingress:
   - fromEntities:
-    - all
+    - host
+    - remote-node
+    - cluster
+    - init
+    - health
